@@ -696,6 +696,36 @@ def non_max_suppression(prediction, conf_thres=0.25, iou_thres=0.45, classes=Non
         if (time.time() - t) > time_limit:
             print(f'WARNING: NMS time limit {time_limit}s exceeded')
             break  # time limit exceeded
+    #print (len(output))
+    #print (output)
+    #print (output[0].shape)
+    
+    new_output = []
+    for batch_item in output:
+        max_conf_largest = 0.0
+        max_conf_smallest = 0.0
+        #item_output = [[],[]]
+        for item in batch_item:
+            if (item[5]==1):
+                if (item[4]>max_conf_largest):
+                    max_conf_largest = item[4]
+                    largest_item = item
+            elif (item[5]==0):
+                if (item[4]>max_conf_smallest):
+                    max_conf_smallest = item[4]
+                    smallest_item = item
+        batch_item_output = []
+        if max_conf_largest > 0.0:
+            batch_item_output.append(largest_item)
+        if max_conf_smallest > 0.0:
+            batch_item_output.append(smallest_item)
+        if len(batch_item_output) > 0:
+            new_output.append(torch.stack(batch_item_output))
+        else:
+          new_output.append(torch.tensor(batch_item_output))
+
+    #print (type(largest_item))
+    output = new_output
 
     return output
 

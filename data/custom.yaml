@@ -1,0 +1,6 @@
+train: /content/custom_training/train/
+val: /content/custom_training/val/
+nc: 2
+names:
+- smallest
+- largest
