@@ -359,6 +359,7 @@ class LoadImagesAndLabels(Dataset):  # for training/testing
         self.image_weights = image_weights
         self.rect = False if image_weights else rect
         self.mosaic = self.augment and not self.rect  # load 4 images at a time into a mosaic (only during training)
+        #self.mosaic = False
         self.mosaic_border = [-img_size // 2, -img_size // 2]
         self.stride = stride
         self.path = path        
@@ -566,7 +567,8 @@ class LoadImagesAndLabels(Dataset):  # for training/testing
             labels = self.labels[index].copy()
             if labels.size:  # normalized xywh to pixel xyxy format
                 labels[:, 1:] = xywhn2xyxy(labels[:, 1:], ratio[0] * w, ratio[1] * h, padw=pad[0], padh=pad[1])
-
+        save_path = "/content/transformations/"+str(index)+"_"
+        i=0
         if self.augment:
             # Augment imagespace
             if not mosaic:
@@ -576,12 +578,16 @@ class LoadImagesAndLabels(Dataset):  # for training/testing
                                                  scale=hyp['scale'],
                                                  shear=hyp['shear'],
                                                  perspective=hyp['perspective'])
+                i+=1
+                cv2.imwrite(save_path+"transformed_image_"+str(i)+"_rand.jpg", img)
             
             
             #img, labels = self.albumentations(img, labels)
 
             # Augment colorspace
             augment_hsv(img, hgain=hyp['hsv_h'], sgain=hyp['hsv_s'], vgain=hyp['hsv_v'])
+            i+=1
+            cv2.imwrite(save_path+"transformed_image_"+str(i)+"_hsv.jpg", img)
 
             # Apply cutouts
             # if random.random() < 0.9:
@@ -611,12 +617,16 @@ class LoadImagesAndLabels(Dataset):  # for training/testing
                 img = np.flipud(img)
                 if nL:
                     labels[:, 2] = 1 - labels[:, 2]
+                i+=1
+                cv2.imwrite(save_path+"transformed_image_"+str(i)+"_flipud.jpg", img)
 
             # flip left-right
             if random.random() < hyp['fliplr']:
                 img = np.fliplr(img)
                 if nL:
                     labels[:, 1] = 1 - labels[:, 1]
+                i+=1
+                cv2.imwrite(save_path+"transformed_image_"+str(i)+"_fliplr.jpg", img)
 
         labels_out = torch.zeros((nL, 6))
         if nL:
@@ -624,6 +634,7 @@ class LoadImagesAndLabels(Dataset):  # for training/testing
 
         # Convert
         img = img[:, :, ::-1].transpose(2, 0, 1)  # BGR to RGB, to 3x416x416
+
         img = np.ascontiguousarray(img)
 
         return torch.from_numpy(img), labels_out, self.img_files[index], shapes
